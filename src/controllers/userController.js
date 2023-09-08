@@ -5,39 +5,42 @@ const { response } = require('express');
 
 module.exports = {
 
-    async validarDados(req,res){
+    async validarDados(req, res) {
         let error = []
         let arrayResults = []
-        let data = req.body   
+        let data = req.body
         let code = data.product_code
-        
-        await connection.query(`
+
+        if (code !== null && code !== '') {
+            await connection.query(`
             SELECT * FROM products WHERE code = ${code} limit 1
             `, function (err, rows) {
 
-                            if (err) {
-                                error.push('error na requisição, tente novamente') 
-                            }
-                        }).then( ( success) =>  arrayResults = [...arrayResults,success[0]])
-         
-        if(error.length !== 0){
-            return res.json({erro: error})    
+                if (err) {
+                    error.push('error na requisição, tente novamente')
+                }
+            }).then((success) => arrayResults = [...arrayResults, success[0]])
+
         }
-        return res.json({array: arrayResults})       
+
+        if (error.length !== 0) {
+            return res.json({ erro: error })
+        }
+        return res.json({ array: arrayResults })
 
     },
-    async consultaDados(req,res){
+    async consultaDados(req, res) {
         let error = []
 
         const results = await connection.query(`
         SELECT code,sales_price FROM products WHERE code < 1000
         `, function (err, rows) {
-                        if (err) {
-                            error.push('error na requisição, tente novamente')
-                            return res.json({ erro: error })
-                        }
-                    })
-        return res.json(results[0])         
+            if (err) {
+                error.push('error na requisição, tente novamente')
+                return res.json({ erro: error })
+            }
+        })
+        return res.json(results[0])
 
     },
     async recebeDados(req, res) {
@@ -47,9 +50,9 @@ module.exports = {
 
         let data = []
 
-        reqBody.forEach((e,i) =>{
-            if(reqBody[i].product_code !== ''){
-                data.push(reqBody[i]) 
+        reqBody.forEach((e, i) => {
+            if (reqBody[i].product_code !== '' && reqBody[i].product_code !== null) {
+                data.push(reqBody[i])
             }
         })
 
@@ -81,16 +84,20 @@ module.exports = {
 
             if (filterResults[i].length == 0) {
                 error.push(`Produto ${code} não encontrado`)
+               // return res.json({ erro: error })
             }
+            if(filterResults[i][0].cost_price){
+                
+                let costDebug = filterResults[i][0].cost_price || 0
 
-            let costDebug = filterResults[i][0].cost_price || 0
-
-            if (parseFloat(salesPrice) < parseFloat(costDebug)) {
-
-                filterResults[i].forEach((e, i) => {
-                    error.push(`item ${code} com preço de venda menor que o preço de custo`)
-                })
+                if (parseFloat(salesPrice) < parseFloat(costDebug)) {
+    
+                    filterResults[i].forEach((e, i) => {
+                        error.push(`item ${code} com preço de venda menor que o preço de custo`)
+                    })
+                }
             }
+            
 
             let resultadoMenor = parseFloat(filterResults[i][0].sales_price) - (parseFloat(filterResults[i][0].sales_price) * 0.1)
 
@@ -110,7 +117,7 @@ module.exports = {
             return res.json({ erro: error })
         }
 
-        return res.json({status:200})
+        return res.json({ status: 200 })
 
     },
     async atualizarDados(req, res) {
@@ -198,7 +205,7 @@ UPDATE products SET sales_price='${salesPrice}' WHERE code='${code}'
                 }
             })
         })
-      return res.json({status:200})
+        return res.json({ status: 200 })
     },
     async resultUpload(req, response) {
 
